@@ -3,11 +3,32 @@
 <head>
     <title>Daily Question Leaderboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="names.js"></script> <!-- External file for name list -->
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; }
         select, button { margin: 5px 0; }
         canvas { margin-top: 20px; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 columns for each row (Date + 3 users) */
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .grid-container .cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ddd;
+            text-align: center;
+            line-height: 40px;
+            font-size: 16px;
+        }
+
+        .right { background-color: green; color: white; }
+        .close { background-color: yellow; color: black; }
+        .wrong { background-color: red; color: white; }
+        .empty { background-color: lightgray; color: white; }
     </style>
 </head>
 <body>
@@ -16,69 +37,101 @@
         <label for="name">Choose Your Name:</label><br>
         <select id="name">
             <option value="">Select a name</option>
-            <option value="Alice">Alice</option>
-            <option value="Bob">Bob</option>
-            <option value="Charlie">Charlie</option>
+            <!-- Names will be populated from names.js -->
         </select><br>
 
         <label>Did you get the daily question right?</label><br>
         <button onclick="submitResult('right')">Right</button>
         <button onclick="submitResult('wrong')">Wrong</button>
+        <button onclick="submitResult('close')">Close</button>
 
         <h2>Leaderboard</h2>
-        <canvas id="leaderboardChart"></canvas>
+        <div id="grid" class="grid-container">
+            <!-- Grid for results will be populated here -->
+        </div>
     </div>
 
     <script>
-        const data = {
-            Alice: { correct: 0, total: 0 },
-            Bob: { correct: 0, total: 0 },
-            Charlie: { correct: 0, total: 0 }
+        // Retrieve data from localStorage or initialize if not available
+        const data = JSON.parse(localStorage.getItem('leaderboardData')) || {
+            Alice: { entries: [] },
+            Bob: { entries: [] },
+            Charlie: { entries: [] }
         };
 
         function submitResult(result) {
             const name = document.getElementById('name').value;
             if (!name) return alert('Please select a name.');
 
-            data[name].total += 1;
-            if (result === 'right') data[name].correct += 1;
+            const date = new Date().toLocaleDateString();  // Get current date in a readable format
+            const newEntry = { date, result };
 
-            updateChart();
+            // Add new entry to the user data
+            data[name].entries.push(newEntry);
+
+            // Save updated data to localStorage
+            localStorage.setItem('leaderboardData', JSON.stringify(data));
+
+            updateGrid();
         }
 
-        function updateChart() {
-            const names = Object.keys(data);
-            const accuracy = names.map(name => data[name].total > 0 ? (data[name].correct / data[name].total) * 100 : 0);
-            const correct = names.map(name => data[name].correct);
+        function updateGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = ''; // Clear the grid
 
-            const ctx = document.getElementById('leaderboardChart').getContext('2d');
-            if (window.myChart) window.myChart.destroy();
+            const dates = getUniqueDates();
+            dates.forEach(date => {
+                const dateRow = document.createElement('div');
+                dateRow.classList.add('grid-container');
 
-            window.myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: names,
-                    datasets: [
-                        {
-                            label: 'Accuracy (%)',
-                            data: accuracy,
-                            backgroundColor: 'rgba(54, 162, 235, 0.6)'
-                        },
-                        {
-                            label: 'Total Correct Answers',
-                            data: correct,
-                            backgroundColor: 'rgba(75, 192, 192, 0.6)'
-                        }
-                    ]
-                },
-                options: {
-                    indexAxis: 'y',
-                    scales: {
-                        x: { max: 100 }
+                // Create the date label cell
+                const dateCell = document.createElement('div');
+                dateCell.classList.add('cell');
+                dateCell.style.gridColumn = 'span 4'; // Make it span across the entire row
+                dateCell.textContent = date;
+                dateRow.appendChild(dateCell);
+
+                // Create the cells for each user's result on this date
+                Object.keys(data).forEach(name => {
+                    const entry = data[name].entries.find(entry => entry.date === date);
+                    const resultCell = document.createElement('div');
+                    resultCell.classList.add('cell');
+
+                    if (entry) {
+                        resultCell.textContent = entry.result.charAt(0).toUpperCase(); // Only display the first letter
+                        if (entry.result === 'right') resultCell.classList.add('right');
+                        if (entry.result === 'close') resultCell.classList.add('close');
+                        if (entry.result === 'wrong') resultCell.classList.add('wrong');
+                    } else {
+                        resultCell.classList.add('empty');
                     }
-                }
+
+                    dateRow.appendChild(resultCell);
+                });
+
+                grid.appendChild(dateRow);
             });
         }
+
+        // Helper function to get unique dates
+        function getUniqueDates() {
+            const allEntries = Object.values(data).flatMap(user => user.entries);
+            const uniqueDates = [...new Set(allEntries.map(entry => entry.date))];
+            return uniqueDates.sort((a, b) => new Date(b) - new Date(a)); // Sort descending
+        }
+
+        // Populate the name dropdown from names.js
+        window.onload = function() {
+            const selectElement = document.getElementById('name');
+            names.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                selectElement.appendChild(option);
+            });
+
+            updateGrid(); // Update the grid on page load
+        };
     </script>
 </body>
 </html>
