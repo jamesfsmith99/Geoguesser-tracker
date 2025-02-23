@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daily Question Leaderboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        select, button { margin: 5px 0; }
+        canvas { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Daily Question Leaderboard</h1>
+        <label for="name">Choose Your Name:</label><br>
+        <select id="name">
+            <option value="">Select a name</option>
+            <option value="Alice">Alice</option>
+            <option value="Bob">Bob</option>
+            <option value="Charlie">Charlie</option>
+        </select><br>
+
+        <label>Did you get the daily question right?</label><br>
+        <button onclick="submitResult('right')">Right</button>
+        <button onclick="submitResult('wrong')">Wrong</button>
+
+        <h2>Leaderboard</h2>
+        <canvas id="leaderboardChart"></canvas>
+    </div>
+
+    <script>
+        const data = {
+            Alice: { correct: 0, total: 0 },
+            Bob: { correct: 0, total: 0 },
+            Charlie: { correct: 0, total: 0 }
+        };
+
+        function submitResult(result) {
+            const name = document.getElementById('name').value;
+            if (!name) return alert('Please select a name.');
+
+            data[name].total += 1;
+            if (result === 'right') data[name].correct += 1;
+
+            updateChart();
+        }
+
+        function updateChart() {
+            const names = Object.keys(data);
+            const accuracy = names.map(name => data[name].total > 0 ? (data[name].correct / data[name].total) * 100 : 0);
+            const correct = names.map(name => data[name].correct);
+
+            const ctx = document.getElementById('leaderboardChart').getContext('2d');
+            if (window.myChart) window.myChart.destroy();
+
+            window.myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: names,
+                    datasets: [
+                        {
+                            label: 'Accuracy (%)',
+                            data: accuracy,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                        },
+                        {
+                            label: 'Total Correct Answers',
+                            data: correct,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    scales: {
+                        x: { max: 100 }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
