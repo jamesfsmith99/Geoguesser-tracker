@@ -29,6 +29,15 @@
         .close { background-color: yellow; color: black; }
         .wrong { background-color: red; color: white; }
         .empty { background-color: lightgray; color: white; }
+        .delete-btn {
+            background-color: red;
+            color: white;
+            font-size: 12px;
+            padding: 5px;
+            border: none;
+            cursor: pointer;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -102,6 +111,13 @@
                         if (entry.result === 'right') resultCell.classList.add('right');
                         if (entry.result === 'close') resultCell.classList.add('close');
                         if (entry.result === 'wrong') resultCell.classList.add('wrong');
+
+                        // Add delete button next to the result
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.classList.add('delete-btn');
+                        deleteBtn.onclick = function() { deleteEntry(name, date); };
+                        resultCell.appendChild(deleteBtn);
                     } else {
                         resultCell.classList.add('empty');
                     }
@@ -120,6 +136,22 @@
             return uniqueDates.sort((a, b) => new Date(b) - new Date(a)); // Sort descending
         }
 
+        // Delete an entry from the data
+        function deleteEntry(name, date) {
+            // Find the index of the entry to remove
+            const entryIndex = data[name].entries.findIndex(entry => entry.date === date);
+            if (entryIndex !== -1) {
+                // Remove the entry
+                data[name].entries.splice(entryIndex, 1);
+
+                // Save the updated data back to localStorage
+                localStorage.setItem('leaderboardData', JSON.stringify(data));
+
+                // Re-render the grid
+                updateGrid();
+            }
+        }
+
         // Populate the name dropdown from names.js
         window.onload = function() {
             const selectElement = document.getElementById('name');
@@ -135,4 +167,3 @@
     </script>
 </body>
 </html>
-
